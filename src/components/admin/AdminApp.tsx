@@ -28,6 +28,7 @@ function Sidebar({ ctx }: { ctx: AdminCtx }) {
             ))}
           </select>
         </label>
+        <button onClick={ctx.logoutAdmin} style={{ background: "none", border: "1px solid #3a3833", color: "#c9c6c0", font: "600 12px Helvetica,Arial,sans-serif", padding: 11, cursor: "pointer", borderRadius: 10 }}>Log Out</button>
         <Link href="/" style={{ display: "block", textAlign: "center", background: "none", border: "1px solid #3a3833", color: "#c9c6c0", font: "600 12px Helvetica,Arial,sans-serif", padding: 11, cursor: "pointer", borderRadius: 10 }}>Exit to Storefront</Link>
       </div>
     </div>
@@ -51,10 +52,28 @@ function MobileTopBar({ ctx }: { ctx: AdminCtx }) {
             {ctx.adminNavItemsMobile.map((it) => (
               <button key={it.key} onClick={it.onClick} style={{ textAlign: "left", background: it.bg, color: it.color, border: "none", font: "600 13px Helvetica,Arial,sans-serif", padding: "12px 14px", cursor: "pointer", borderRadius: 10 }}>{it.label}</button>
             ))}
+            <button onClick={ctx.logoutAdmin} style={{ textAlign: "left", background: "none", border: "none", color: "#c9c6c0", font: "600 13px Helvetica,Arial,sans-serif", padding: "12px 14px", cursor: "pointer", borderRadius: 10, marginTop: "auto" }}>Log Out</button>
           </div>
         </div>
       )}
     </>
+  );
+}
+
+function AdminLoginView({ ctx }: { ctx: AdminCtx }) {
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0f0f0f", padding: 20 }}>
+      <form onSubmit={ctx.submitAdminLogin} style={{ width: 380, maxWidth: "100%", background: "#fafaf9", borderRadius: 22, padding: 34, display: "flex", flexDirection: "column", gap: 14 }}>
+        <img src="/uploads/streetwear-city-logo.png" style={{ height: 32, alignSelf: "center", marginBottom: 8 }} alt="Streetwear City" />
+        <h1 style={{ font: "800 19px Arial Black,Arial,sans-serif", margin: "0 0 2px", textAlign: "center" }}>ADMIN LOGIN</h1>
+        <p style={{ font: "400 12.5px Helvetica,Arial,sans-serif", color: "#6b6b6b", margin: "0 0 8px", textAlign: "center" }}>Sign in to manage products, orders, and your store.</p>
+        <input placeholder="Email" type="email" value={ctx.loginForm.email} onChange={ctx.setLoginEmail} style={inputStyle} />
+        <input placeholder="Password" type="password" value={ctx.loginForm.password} onChange={ctx.setLoginPassword} style={inputStyle} />
+        {ctx.loginError && <span style={{ font: "600 12px Helvetica,Arial,sans-serif", color: "oklch(0.5 0.16 40)" }}>{ctx.loginError}</span>}
+        <button type="submit" style={{ background: "#0f0f0f", color: "#fafaf9", border: "none", font: "700 13px Helvetica,Arial,sans-serif", letterSpacing: ".05em", padding: 15, cursor: "pointer", marginTop: 6, borderRadius: 999 }}>LOG IN</button>
+        <Link href="/" style={{ textAlign: "center", font: "600 12px Helvetica,Arial,sans-serif", color: "#6b6b6b" }}>← Back to storefront</Link>
+      </form>
+    </div>
   );
 }
 
@@ -176,7 +195,52 @@ function ProductsSection({ ctx }: { ctx: AdminCtx }) {
             </select>
             <input placeholder="Price (NGN)" value={ctx.form.price} onChange={ctx.setFormPrice} style={inputStyle} />
             <input placeholder="Stock quantity" value={ctx.form.stock} onChange={ctx.setFormStock} style={inputStyle} />
-            <div style={{ border: "1px dashed #cfccc6", padding: 24, textAlign: "center", font: "400 12px Helvetica,Arial,sans-serif", color: "#9c9994", borderRadius: 12 }}>Drop product images here</div>
+
+            <label style={{ font: "600 12px Helvetica,Arial,sans-serif" }}>
+              Size type
+              <select value={ctx.form.sizeType} onChange={ctx.setFormSizeType} style={{ ...inputStyle, display: "block", width: "100%", marginTop: 6, boxSizing: "border-box" }}>
+                <option value="clothing">Clothing (XS to XXL)</option>
+                <option value="adjustable">Adjustable (one size)</option>
+                <option value="fitted">Fitted (hat sizes)</option>
+                <option value="waist">Waist (inches)</option>
+              </select>
+              <span style={{ font: "400 11px Helvetica,Arial,sans-serif", color: "#9c9994", display: "block", marginTop: 4 }}>Sizes shown to customers: {ctx.formSizePreview.join(", ")}</span>
+            </label>
+
+            <div>
+              <span style={{ font: "600 12px Helvetica,Arial,sans-serif" }}>Colors</span>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+                {ctx.form.colors.map((c) => (
+                  <span key={c.name} style={{ display: "flex", alignItems: "center", gap: 6, border: "1px solid #cfccc6", borderRadius: 999, padding: "5px 10px 5px 6px", font: "600 11px Helvetica,Arial,sans-serif" }}>
+                    <span style={{ width: 14, height: 14, borderRadius: "50%", background: c.hex, border: "1px solid #cfccc6" }} />
+                    {c.name}
+                    <button onClick={() => ctx.removeFormColor(c.name)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, font: "600 12px Helvetica,Arial,sans-serif", color: "#6b6b6b" }}>✕</button>
+                  </span>
+                ))}
+              </div>
+              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                <input placeholder="Color name" value={ctx.colorDraft.name} onChange={ctx.setColorDraftName} style={{ ...inputStyle, flex: 1 }} />
+                <input type="color" value={ctx.colorDraft.hex} onChange={ctx.setColorDraftHex} style={{ width: 44, padding: 2, border: "1px solid #cfccc6", borderRadius: 10, cursor: "pointer" }} />
+                <button onClick={ctx.addColorDraft} style={{ background: "#0f0f0f", color: "#fafaf9", border: "none", font: "600 11px Helvetica,Arial,sans-serif", padding: "0 16px", cursor: "pointer", borderRadius: 10 }}>Add</button>
+              </div>
+            </div>
+
+            <div>
+              <span style={{ font: "600 12px Helvetica,Arial,sans-serif" }}>Product images</span>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+                {ctx.form.images.map((url) => (
+                  <div key={url} style={{ position: "relative", width: 56, height: 56, borderRadius: 10, overflow: "hidden", border: "1px solid #e6e3de" }}>
+                    <img src={url} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
+                    <button onClick={() => ctx.removeFormImage(url)} style={{ position: "absolute", top: 2, right: 2, background: "rgba(15,15,15,.7)", color: "#fafaf9", border: "none", borderRadius: "50%", width: 18, height: 18, cursor: "pointer", font: "600 10px Helvetica,Arial,sans-serif", lineHeight: "18px", padding: 0 }}>✕</button>
+                  </div>
+                ))}
+                <label style={{ width: 56, height: 56, border: "1px dashed #cfccc6", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", font: "600 18px Helvetica,Arial,sans-serif", color: "#9c9994" }}>
+                  +
+                  <input type="file" accept="image/*" multiple onChange={ctx.addFormImages} style={{ display: "none" }} />
+                </label>
+              </div>
+            </div>
+
             <textarea placeholder="Description" value={ctx.form.description} onChange={ctx.setFormDescription} style={{ ...inputStyle, minHeight: 80 }} />
             <button onClick={ctx.submitForm} style={{ background: "#0f0f0f", color: "#fafaf9", border: "none", font: "700 13px Helvetica,Arial,sans-serif", padding: 14, cursor: "pointer", marginTop: 8, borderRadius: 10 }}>{ctx.drawerAction}</button>
           </div>
@@ -365,8 +429,103 @@ function LogsSection({ ctx }: { ctx: AdminCtx }) {
   );
 }
 
+function InventorySection({ ctx }: { ctx: AdminCtx }) {
+  return (
+    <div>
+      <h1 style={{ font: "800 26px Arial Black,Arial,sans-serif", margin: "0 0 20px" }}>Inventory</h1>
+      <div style={{ overflowX: "auto", marginBottom: 34 }}>
+        <table style={{ width: "100%", minWidth: 640, borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={{ borderBottom: "1px solid #0f0f0f" }}>
+              <th style={tableHeadCell}>PRODUCT</th>
+              <th style={tableHeadCell}>CATEGORY</th>
+              <th style={tableHeadCell}>STOCK</th>
+              <th style={tableHeadCell}>STATUS</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {ctx.inventoryRows.map((p) => (
+              <tr key={p.id} style={{ borderBottom: "1px solid #eeece8" }}>
+                <td style={{ padding: "10px 8px", display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ width: 36, height: 36, background: "#eeece8", flexShrink: 0, borderRadius: 8, overflow: "hidden" }}><img src={p.image} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" /></div>
+                  <span style={{ font: "600 12.5px Helvetica,Arial,sans-serif" }}>{p.name}</span>
+                </td>
+                <td style={{ padding: "10px 8px", font: "400 12.5px Helvetica,Arial,sans-serif" }}>{p.category}</td>
+                <td style={{ padding: "10px 8px", font: "400 12.5px Helvetica,Arial,sans-serif" }}>{p.stock} units</td>
+                <td style={{ padding: "10px 8px" }}><span style={{ background: p.statusBg, color: p.statusColor, font: "600 10px Helvetica,Arial,sans-serif", padding: "4px 10px", borderRadius: 999 }}>{p.statusLabel}</span></td>
+                <td style={{ padding: "10px 8px", textAlign: "right", display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                  <button onClick={() => p.restock(5)} style={{ background: "none", border: "1px solid #cfccc6", font: "600 11px Helvetica,Arial,sans-serif", padding: "6px 12px", cursor: "pointer", borderRadius: 8 }}>+5</button>
+                  <button onClick={() => p.restock(20)} style={{ background: "none", border: "1px solid #cfccc6", font: "600 11px Helvetica,Arial,sans-serif", padding: "6px 12px", cursor: "pointer", borderRadius: 8 }}>+20</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <h3 style={{ font: "800 13px Arial Black,Arial,sans-serif", margin: "0 0 14px" }}>RECENT STOCK CHANGES</h3>
+      {ctx.stockChangeLog.length === 0 && <p style={{ font: "400 12.5px Helvetica,Arial,sans-serif", color: "#9c9994" }}>No restocks yet.</p>}
+      {ctx.stockChangeLog.map((l) => (
+        <div key={l.id} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #eeece8", font: "400 12.5px Helvetica,Arial,sans-serif" }}>
+          <span>{l.productName}</span>
+          <span style={{ font: "700 12.5px Helvetica,Arial,sans-serif", color: "#1a7a3c" }}>+{l.delta}</span>
+          <span style={{ color: "#9c9994" }}>{l.time}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SettingsSection({ ctx }: { ctx: AdminCtx }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 34, maxWidth: 520 }}>
+      <h1 style={{ font: "800 26px Arial Black,Arial,sans-serif", margin: 0 }}>Settings</h1>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <h3 style={{ font: "800 13px Arial Black,Arial,sans-serif", margin: 0 }}>STORE PROFILE</h3>
+        <label style={{ font: "600 12px Helvetica,Arial,sans-serif" }}>Store name
+          <input value={ctx.settings.storeName} onChange={ctx.setSettingsStoreName} style={{ ...inputStyle, display: "block", width: "100%", marginTop: 6, boxSizing: "border-box" }} />
+        </label>
+        <label style={{ font: "600 12px Helvetica,Arial,sans-serif" }}>Support email
+          <input value={ctx.settings.supportEmail} onChange={ctx.setSettingsSupportEmail} style={{ ...inputStyle, display: "block", width: "100%", marginTop: 6, boxSizing: "border-box" }} />
+        </label>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <h3 style={{ font: "800 13px Arial Black,Arial,sans-serif", margin: 0 }}>PAYMENT PROVIDER</h3>
+        <div style={{ border: "1px solid #0f0f0f", borderRadius: 14, padding: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ font: "700 13px Helvetica,Arial,sans-serif" }}>Bachs</span>
+          <span style={{ background: "#eceae5", font: "600 10px Helvetica,Arial,sans-serif", padding: "4px 10px", borderRadius: 999 }}>ACTIVE</span>
+        </div>
+        {["Paystack", "Flutterwave"].map((p) => (
+          <div key={p} style={{ border: "1px solid #e6e3de", borderRadius: 14, padding: 16, display: "flex", justifyContent: "space-between", alignItems: "center", opacity: 0.5 }}>
+            <span style={{ font: "700 13px Helvetica,Arial,sans-serif" }}>{p}</span>
+            <span style={{ font: "600 10px Helvetica,Arial,sans-serif", color: "#9c9994" }}>NOT CONNECTED</span>
+          </div>
+        ))}
+        <p style={{ font: "400 11.5px Helvetica,Arial,sans-serif", color: "#9c9994", margin: 0 }}>The payment provider is swappable at the API layer without changing checkout, this list is for visibility only.</p>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <h3 style={{ font: "800 13px Arial Black,Arial,sans-serif", margin: 0 }}>NOTIFICATIONS</h3>
+        {ctx.settingsToggles.map((t) => (
+          <label key={t.key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #e6e3de", cursor: "pointer" }}>
+            <span style={{ font: "400 13px Helvetica,Arial,sans-serif" }}>{t.label}</span>
+            <span onClick={t.onClick} style={{ width: 38, height: 22, borderRadius: 11, background: t.bg, position: "relative", transition: "background .2s" }}>
+              <span style={{ position: "absolute", top: 2, left: t.knobLeft, width: 18, height: 18, borderRadius: "50%", background: "#fafaf9", transition: "left .2s" }} />
+            </span>
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function AdminApp() {
   const ctx = useAdmin();
+
+  if (!ctx.authenticated) return <AdminLoginView ctx={ctx} />;
+
   return (
     <div style={{ fontFamily: "Helvetica,Arial,sans-serif", background: "#fafaf9", color: "#0f0f0f", minHeight: "100vh", display: "flex", maxWidth: "100vw", overflowX: "hidden" }}>
       {ctx.isDesktop && <Sidebar ctx={ctx} />}
@@ -374,10 +533,12 @@ export default function AdminApp() {
       <div style={{ flex: 1, padding: ctx.mainPadding, minWidth: 0, maxWidth: "100%" }}>
         {ctx.isOverview && <Overview ctx={ctx} />}
         {ctx.isProducts && <ProductsSection ctx={ctx} />}
+        {ctx.isInventory && <InventorySection ctx={ctx} />}
         {ctx.isOrders && <OrdersSection ctx={ctx} />}
         {ctx.isCustomers && <CustomersSection ctx={ctx} />}
         {ctx.isAnalytics && <AnalyticsSection ctx={ctx} />}
         {ctx.isUsers && <UsersSection ctx={ctx} />}
+        {ctx.isSettings && <SettingsSection ctx={ctx} />}
         {ctx.isLogs && <LogsSection ctx={ctx} />}
       </div>
     </div>

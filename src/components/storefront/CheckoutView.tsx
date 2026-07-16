@@ -75,20 +75,38 @@ export default function CheckoutView({ ctx }: { ctx: StoreCtx }) {
                 </div>
               </div>
             )}
-            {ctx.isStepPayment && (
+            {ctx.isStepPayment && ctx.isPaymentReview && (
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 <h2 style={{ font: "800 20px Arial Black,Arial,sans-serif", margin: "0 0 6px" }}>PAYMENT</h2>
-                <input placeholder="Card number" value={ctx.payForm.number} onChange={ctx.setPayNumber} style={inputStyle} />
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-                  <input placeholder="MM / YY" value={ctx.payForm.exp} onChange={ctx.setPayExp} style={inputStyle} />
-                  <input placeholder="CVC" value={ctx.payForm.cvc} onChange={ctx.setPayCvc} style={inputStyle} />
+                <div style={{ border: "1px solid #e6e3de", borderRadius: 14, padding: 18, display: "flex", flexDirection: "column", gap: 10 }}>
+                  <span style={{ font: "700 13px Helvetica,Arial,sans-serif" }}>Pay securely with Bachs</span>
+                  <p style={{ font: "400 12.5px/1.6 Helvetica,Arial,sans-serif", color: "#6b6b6b", margin: 0 }}>
+                    You&apos;ll be redirected to a secure payment page to complete your purchase by card, bank transfer, or mobile money. We never see or store your card details.
+                  </p>
+                  <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+                    <span style={{ border: "1px solid #cfccc6", borderRadius: 8, padding: "6px 12px", font: "600 11px Helvetica,Arial,sans-serif" }}>Card</span>
+                    <span style={{ border: "1px solid #cfccc6", borderRadius: 8, padding: "6px 12px", font: "600 11px Helvetica,Arial,sans-serif" }}>Bank Transfer</span>
+                    <span style={{ border: "1px solid #cfccc6", borderRadius: 8, padding: "6px 12px", font: "600 11px Helvetica,Arial,sans-serif" }}>Mobile Money</span>
+                  </div>
                 </div>
-                <input placeholder="Name on card" value={ctx.payForm.name} onChange={ctx.setPayName} style={inputStyle} />
                 <textarea placeholder="Order notes (optional)" value={ctx.orderNotes} onChange={ctx.setOrderNotes} style={{ ...inputStyle, minHeight: 70, resize: "vertical" }} />
                 <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
                   <button onClick={ctx.backToDelivery} style={{ background: "none", color: "#0f0f0f", border: "1px solid #0f0f0f", font: "700 12.5px Helvetica,Arial,sans-serif", letterSpacing: ".05em", padding: "15px 22px", cursor: "pointer", borderRadius: 999 }}>BACK</button>
-                  <button onClick={ctx.placeOrder} style={{ background: "#0f0f0f", color: "#fafaf9", border: "none", font: "700 12.5px Helvetica,Arial,sans-serif", letterSpacing: ".05em", padding: "15px 26px", cursor: "pointer", borderRadius: 999 }}>PLACE ORDER · {ctx.orderTotalLabel}</button>
+                  <button onClick={ctx.payNow} style={{ background: "#0f0f0f", color: "#fafaf9", border: "none", font: "700 12.5px Helvetica,Arial,sans-serif", letterSpacing: ".05em", padding: "15px 26px", cursor: "pointer", borderRadius: 999 }}>PAY SECURELY · {ctx.orderTotalLabel}</button>
                 </div>
+              </div>
+            )}
+            {ctx.isStepPayment && (ctx.isPaymentRedirecting || ctx.isPaymentVerifying) && (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, padding: "60px 20px", textAlign: "center" }}>
+                <div style={{ width: 40, height: 40, borderRadius: "50%", border: "3px solid #e6e3de", borderTopColor: "#0f0f0f", animation: "swc-spin 0.8s linear infinite" }} />
+                <h2 style={{ font: "800 17px Arial Black,Arial,sans-serif", margin: 0 }}>
+                  {ctx.isPaymentRedirecting ? "REDIRECTING TO SECURE PAYMENT" : "VERIFYING YOUR PAYMENT"}
+                </h2>
+                <p style={{ font: "400 13px/1.6 Helvetica,Arial,sans-serif", color: "#6b6b6b", margin: 0, maxWidth: 340 }}>
+                  {ctx.isPaymentRedirecting
+                    ? "Taking you to Bachs to complete your purchase. Do not close this window."
+                    : "Payment received. Confirming with the payment provider before we place your order."}
+                </p>
               </div>
             )}
           </div>

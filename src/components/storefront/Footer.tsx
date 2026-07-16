@@ -1,6 +1,16 @@
 import Link from "next/link";
 import type { StoreCtx } from "./storefront-types";
 
+const FOOTER_LINK_HREFS: Record<string, string> = {
+  "Shipping": "/shipping",
+  "Returns": "/returns",
+  "FAQ": "/faq",
+  "Contact Us": "/contact",
+  "About": "/about",
+  "Privacy Policy": "/privacy",
+  "Terms of Service": "/terms",
+};
+
 export default function Footer({ ctx }: { ctx: StoreCtx }) {
   return (
     <div style={{ background: "#0f0f0f", color: "#c9c6c0" }}>
@@ -12,16 +22,16 @@ export default function Footer({ ctx }: { ctx: StoreCtx }) {
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <span style={{ color: "#fafaf9", font: "700 12px Helvetica,Arial,sans-serif", letterSpacing: ".05em" }}>SUPPORT</span>
-            <a href="#" style={{ font: "400 13px Helvetica,Arial,sans-serif", color: "#c9c6c0" }}>Shipping</a>
-            <a href="#" style={{ font: "400 13px Helvetica,Arial,sans-serif", color: "#c9c6c0" }}>Returns</a>
-            <a href="#" style={{ font: "400 13px Helvetica,Arial,sans-serif", color: "#c9c6c0" }}>FAQ</a>
-            <a href="#" style={{ font: "400 13px Helvetica,Arial,sans-serif", color: "#c9c6c0" }}>Contact Us</a>
+            <Link href="/shipping" style={{ font: "400 13px Helvetica,Arial,sans-serif", color: "#c9c6c0" }}>Shipping</Link>
+            <Link href="/returns" style={{ font: "400 13px Helvetica,Arial,sans-serif", color: "#c9c6c0" }}>Returns</Link>
+            <Link href="/faq" style={{ font: "400 13px Helvetica,Arial,sans-serif", color: "#c9c6c0" }}>FAQ</Link>
+            <Link href="/contact" style={{ font: "400 13px Helvetica,Arial,sans-serif", color: "#c9c6c0" }}>Contact Us</Link>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <span style={{ color: "#fafaf9", font: "700 12px Helvetica,Arial,sans-serif", letterSpacing: ".05em" }}>COMPANY</span>
-            <a href="#" style={{ font: "400 13px Helvetica,Arial,sans-serif", color: "#c9c6c0" }}>About</a>
-            <a href="#" style={{ font: "400 13px Helvetica,Arial,sans-serif", color: "#c9c6c0" }}>Privacy Policy</a>
-            <a href="#" style={{ font: "400 13px Helvetica,Arial,sans-serif", color: "#c9c6c0" }}>Terms of Service</a>
+            <Link href="/about" style={{ font: "400 13px Helvetica,Arial,sans-serif", color: "#c9c6c0" }}>About</Link>
+            <Link href="/privacy" style={{ font: "400 13px Helvetica,Arial,sans-serif", color: "#c9c6c0" }}>Privacy Policy</Link>
+            <Link href="/terms" style={{ font: "400 13px Helvetica,Arial,sans-serif", color: "#c9c6c0" }}>Terms of Service</Link>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <span style={{ color: "#fafaf9", font: "700 12px Helvetica,Arial,sans-serif", letterSpacing: ".05em" }}>CONNECT</span>
@@ -46,10 +56,10 @@ export default function Footer({ ctx }: { ctx: StoreCtx }) {
                 {fa.open && (
                   <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "0 4px 14px", textAlign: "left" }}>
                     {fa.links.map((lk) => (
-                      <a key={lk} href="#" style={{ font: "400 12.5px Helvetica,Arial,sans-serif", color: "#c9c6c0", display: "flex", alignItems: "center", gap: 8 }}>
+                      <Link key={lk} href={FOOTER_LINK_HREFS[lk] || "#"} style={{ font: "400 12.5px Helvetica,Arial,sans-serif", color: "#c9c6c0", display: "flex", alignItems: "center", gap: 8 }}>
                         {fa.isConnect && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c9c6c0" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.2" cy="6.8" r="1" /></svg>}
                         {lk}
-                      </a>
+                      </Link>
                     ))}
                   </div>
                 )}

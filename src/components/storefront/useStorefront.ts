@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import {
   ADDRESSES,
   NOTIFICATIONS,
@@ -28,26 +29,46 @@ function wishedList(list: Product[], wishlist: string[], cart: CartLine[]): Prod
   return list.map((p) => ({ ...p, wished: wishlist.includes(p.id), cartQty: cartQtyFor(p.id) }));
 }
 
+// The storefront view (home/shop/cart/etc.) lives in this hook's local state, not the URL, so a nav
+// click from a separate route (e.g. /about) has nowhere to apply a view change to. When that happens
+// we stash the requested view here and navigate home, where the next mount picks it up and clears it.
+const PENDING_VIEW_KEY = "swc:pendingView";
+
 export function useStorefront(): StoreCtx {
   const [state, setStateRaw] = useState<StoreState>(initialState);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const orderCounter = useRef(0);
+  const router = useRouter();
+  const pathname = usePathname();
 
-  function patch(update: Partial<StoreState> | ((s: StoreState) => Partial<StoreState>)) {
-    setStateRaw((prev) => ({ ...prev, ...(typeof update === "function" ? update(prev) : update) }));
-  }
+  const patch = useCallback((update: Partial<StoreState> | ((s: StoreState) => Partial<StoreState>)) => {
+    setStateRaw((prev) => {
+      const partial = typeof update === "function" ? update(prev) : update;
+      if (partial.view && pathname !== "/") {
+        sessionStorage.setItem(PENDING_VIEW_KEY, partial.view);
+        router.push("/");
+        return prev;
+      }
+      return { ...prev, ...partial };
+    });
+  }, [pathname, router]);
 
   useEffect(() => {
     const onResize = () => patch({ vw: window.innerWidth });
     window.addEventListener("resize", onResize);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- sync actual viewport width once mounted in the browser
     patch({ vw: window.innerWidth });
+    const pendingView = sessionStorage.getItem(PENDING_VIEW_KEY);
+    if (pendingView) {
+      sessionStorage.removeItem(PENDING_VIEW_KEY);
+      patch({ view: pendingView as StoreState["view"] });
+    }
     const heroTimer = setInterval(() => patch((s) => ({ heroIdx: (s.heroIdx + 1) % 3 })), 4500);
     return () => {
       window.removeEventListener("resize", onResize);
       clearInterval(heroTimer);
     };
-  }, []);
+  }, [patch]);
 
   function showToast(msg: string) {
     patch({ toast: msg });
@@ -492,11 +513,21 @@ export function useStorefront(): StoreCtx {
       border: s.deliveryMethod === d.key ? "#0f0f0f" : "#e6e3de",
       onClick: () => patch({ deliveryMethod: d.key }),
     })),
-    payForm: s.payForm,
-    setPayNumber: (e) => patch({ payForm: { ...s.payForm, number: e.target.value } }),
-    setPayExp: (e) => patch({ payForm: { ...s.payForm, exp: e.target.value } }),
-    setPayCvc: (e) => patch({ payForm: { ...s.payForm, cvc: e.target.value } }),
-    setPayName: (e) => patch({ payForm: { ...s.payForm, name: e.target.value } }),
+    paymentStage: s.paymentStage,
+    isPaymentReview: s.paymentStage === "review",
+    isPaymentRedirecting: s.paymentStage === "redirecting",
+    isPaymentVerifying: s.paymentStage === "verifying",
+    payNow: () => {
+      patch({ paymentStage: "redirecting" });
+      setTimeout(() => {
+        patch({ paymentStage: "verifying" });
+        setTimeout(() => {
+          orderCounter.current += 1;
+          const num = "SWC-" + (10000 + orderCounter.current);
+          patch({ checkoutDone: true, confirmedOrderNumber: num, cart: [], couponApplied: false, paymentStage: "review" });
+        }, 900);
+      }, 900);
+    },
     orderNotes: s.orderNotes,
     setOrderNotes: (e) => patch({ orderNotes: e.target.value }),
     couponCode: s.couponCode,
@@ -513,14 +544,9 @@ export function useStorefront(): StoreCtx {
     deliveryFeeLabel: deliveryFee === 0 ? "FREE" : naira(deliveryFee),
     discountLabel: naira(discount),
     orderTotalLabel: naira(orderTotal),
-    placeOrder: () => {
-      orderCounter.current += 1;
-      const num = "SWC-" + (10000 + orderCounter.current);
-      patch({ checkoutDone: true, confirmedOrderNumber: num, cart: [], couponApplied: false });
-    },
     goCheckoutClick: () => {
       if (s.cart.length === 0) return;
-      patch({ cartOpen: false, view: "checkout", checkoutStep: 0, checkoutDone: false });
+      patch({ cartOpen: false, view: "checkout", checkoutStep: 0, checkoutDone: false, paymentStage: "review" });
       window.scrollTo(0, 0);
     },
     hasCart: s.cart.length > 0,

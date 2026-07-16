@@ -5,6 +5,7 @@ export type AuthTabKey = "login" | "register" | "forgot" | "verify";
 export type ForgotStep = "request" | "reset";
 export type DeliveryMethod = "standard" | "express" | "pickup";
 export type AccountSection = "overview" | "orders" | "order-detail" | "addresses" | "notifications" | "settings";
+export type PaymentStage = "review" | "redirecting" | "verifying";
 
 export interface ShipForm {
   first: string;
@@ -14,13 +15,6 @@ export interface ShipForm {
   state: string;
   zip: string;
   phone: string;
-}
-
-export interface PayForm {
-  number: string;
-  exp: string;
-  cvc: string;
-  name: string;
 }
 
 export interface ProfileForm {
@@ -83,7 +77,7 @@ export interface StoreState {
   orderNotes: string;
   shipForm: ShipForm;
   deliveryMethod: DeliveryMethod;
-  payForm: PayForm;
+  paymentStage: PaymentStage;
   profileForm: ProfileForm;
   settingsToggles: SettingsToggleState;
   vw: number;
@@ -139,7 +133,7 @@ export const initialState: StoreState = {
   orderNotes: "",
   shipForm: initialShipForm,
   deliveryMethod: "standard",
-  payForm: { number: "", exp: "", cvc: "", name: "" },
+  paymentStage: "review",
   profileForm: { name: "Jordan M.", email: "jordan.m@gmail.com", phone: "" },
   settingsToggles: { orderUpdates: true, restockAlerts: true, promos: false },
   vw: 1200,
@@ -490,11 +484,11 @@ export interface StoreCtx {
   goToPayment: () => void;
   backToDelivery: () => void;
   deliveryOptions: DeliveryOptionView[];
-  payForm: PayForm;
-  setPayNumber: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  setPayExp: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  setPayCvc: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  setPayName: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  paymentStage: PaymentStage;
+  isPaymentReview: boolean;
+  isPaymentRedirecting: boolean;
+  isPaymentVerifying: boolean;
+  payNow: () => void;
   orderNotes: string;
   setOrderNotes: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   couponCode: string;
@@ -506,7 +500,6 @@ export interface StoreCtx {
   deliveryFeeLabel: string;
   discountLabel: string;
   orderTotalLabel: string;
-  placeOrder: () => void;
   goCheckoutClick: () => void;
   hasCart: boolean;
   cartEmptyBool: boolean;
