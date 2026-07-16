@@ -29,7 +29,7 @@ export default function DesktopNav({ ctx }: { ctx: StoreCtx }) {
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0f0f0f" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" /></svg>
           </a>
           <button onClick={ctx.openCart} aria-label="Cart" style={{ position: "relative", background: "none", border: "none", cursor: "pointer", padding: 4, borderRadius: 999 }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0f0f0f" strokeWidth="1.8" strokeLinejoin="round"><path d="M6.5 8h11l-.9 12.2a1 1 0 0 1-1 .8H8.4a1 1 0 0 1-1-.8L6.5 8z" /><path d="M9 8V6a3 3 0 0 1 6 0v2" /></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0f0f0f" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1.4" /><circle cx="18" cy="21" r="1.4" /><path d="M1.5 2.5h2.4l2.06 11.02a2 2 0 0 0 2 1.63h8.36a2 2 0 0 0 1.97-1.66L20 8.5H5.1" /></svg>
             {ctx.cartCount > 0 && (
               <span style={{ position: "absolute", top: -4, right: -6, background: "#0f0f0f", color: "#fafaf9", font: "600 9px/1 Helvetica,Arial,sans-serif", borderRadius: "50%", width: 15, height: 15, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 {ctx.cartCount}

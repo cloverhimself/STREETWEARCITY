@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 import type { StoreCtx } from "./storefront-types";
 
 const authInputStyle: React.CSSProperties = { padding: "14px 16px", border: "1px solid #cfccc6", font: "400 13px Helvetica,Arial,sans-serif", borderRadius: 12 };
@@ -22,6 +23,65 @@ function PwToggle({ shown, onClick }: { shown: boolean; onClick: () => void }) {
         {shown && <line x1="3" y1="3" x2="21" y2="21" />}
       </svg>
     </button>
+  );
+}
+
+const OTP_LENGTH = 6;
+
+function OtpInput({ onComplete }: { onComplete: () => void }) {
+  const [digits, setDigits] = useState<string[]>(Array(OTP_LENGTH).fill(""));
+  const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
+
+  const handleChange = (i: number, raw: string) => {
+    const value = raw.replace(/[^0-9]/g, "").slice(-1);
+    const next = [...digits];
+    next[i] = value;
+    setDigits(next);
+    if (value && i < OTP_LENGTH - 1) {
+      inputsRef.current[i + 1]?.focus();
+    } else if (value && i === OTP_LENGTH - 1 && next.every((d) => d)) {
+      onComplete();
+    }
+  };
+
+  const handleKeyDown = (i: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !digits[i] && i > 0) {
+      inputsRef.current[i - 1]?.focus();
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const pasted = e.clipboardData.getData("text").replace(/[^0-9]/g, "").slice(0, OTP_LENGTH);
+    if (!pasted) return;
+    e.preventDefault();
+    const next = Array(OTP_LENGTH).fill("");
+    for (let i = 0; i < pasted.length; i++) next[i] = pasted[i];
+    setDigits(next);
+    const focusIdx = Math.min(pasted.length, OTP_LENGTH - 1);
+    inputsRef.current[focusIdx]?.focus();
+    if (pasted.length === OTP_LENGTH) onComplete();
+  };
+
+  return (
+    <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+      {digits.map((d, i) => (
+        <input
+          key={i}
+          ref={(el) => {
+            inputsRef.current[i] = el;
+          }}
+          value={d}
+          onChange={(e) => handleChange(i, e.target.value)}
+          onKeyDown={(e) => handleKeyDown(i, e)}
+          onPaste={handlePaste}
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          maxLength={1}
+          aria-label={`Digit ${i + 1}`}
+          style={{ width: 42, height: 52, textAlign: "center", padding: 0, border: "1px solid #cfccc6", font: "700 18px Helvetica,Arial,sans-serif", borderRadius: 12, boxSizing: "border-box" }}
+        />
+      ))}
+    </div>
   );
 }
 
@@ -109,7 +169,7 @@ export default function AuthModal({ ctx }: { ctx: StoreCtx }) {
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#0f0f0f" strokeWidth="1.6"><rect x="2.5" y="5" width="19" height="14" rx="1.5" /><path d="M3 6.5l9 6 9-6" /></svg>
             <h1 style={{ font: "800 19px Arial Black,Arial,sans-serif", margin: 0 }}>VERIFY YOUR EMAIL</h1>
             <p style={{ font: "400 13px/1.6 Helvetica,Arial,sans-serif", color: "#6b6b6b", margin: 0 }}>We sent a 6 digit code to your email. Enter it below to activate your account.</p>
-            <input placeholder="000000" style={{ width: 160, textAlign: "center", letterSpacing: ".4em", padding: 14, border: "1px solid #cfccc6", font: "600 15px Helvetica,Arial,sans-serif", borderRadius: 12 }} />
+            <OtpInput onComplete={ctx.submitAuth} />
             <button onClick={ctx.submitAuth} style={{ width: "100%", background: "#0f0f0f", color: "#fafaf9", border: "none", font: "700 13px Helvetica,Arial,sans-serif", letterSpacing: ".05em", padding: 15, cursor: "pointer", marginTop: 6, borderRadius: 999 }}>VERIFY</button>
           </div>
         )}
