@@ -1,22 +1,4 @@
-import { PRODUCTS } from "@/lib/data";
-import type { AdminCustomer, AdminOrder, AdminProduct, AdminRole, AdminUser, ActivityLog } from "./admin-types";
-
-// Admin manages the same catalog the storefront sells from, so seed it from the shared product data
-// instead of a second hand-maintained list (the two had already drifted, e.g. every admin description was blank).
-export const ADMIN_PRODUCTS: AdminProduct[] = PRODUCTS.map((p) => ({
-  id: p.id,
-  name: p.name,
-  category: p.category,
-  price: p.price,
-  image: p.image,
-  images: [p.image],
-  colors: p.colors,
-  sizeType: p.sizeType,
-  rating: p.rating,
-  reviewCount: p.reviewCount,
-  stock: p.stock,
-  description: p.description,
-}));
+import type { AdminCustomer, AdminOrder, AdminRole, AdminUser, ActivityLog } from "./admin-types";
 
 export const ADMIN_ORDERS: AdminOrder[] = [
   { id: "10482", date: "Jul 2, 2026", status: "Delivered", total: 126 },

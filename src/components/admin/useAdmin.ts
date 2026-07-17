@@ -3,11 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { ApiError, apiFetch, clearStoredTokens, setStoredTokens, type LoginResult } from "@/lib/api";
 import { sizesFor } from "@/lib/data";
+import { createProduct, deleteProduct, fetchProducts, updateProduct } from "@/lib/products-api";
 import {
   ACTIVITY_LOGS,
   ADMIN_CUSTOMERS,
   ADMIN_ORDERS,
-  ADMIN_PRODUCTS,
   ADMIN_USERS,
   CATEGORY_BREAKDOWN,
   ROLE_LABELS,
@@ -20,11 +20,15 @@ const emptyProductForm: AdminState["form"] = { name: "", category: "Headwear", p
 
 const initialState: AdminState = {
   adminView: "overview",
-  products: ADMIN_PRODUCTS.map((p) => ({ ...p })),
+  products: [],
+  productsLoading: true,
   drawerOpen: false,
   editingId: null,
   form: emptyProductForm,
+  formError: null,
+  formLoading: false,
   colorDraft: { name: "", hex: "#111111" },
+  imageDraftUrl: "",
   vw: 1200,
   mobileNavOpen: false,
   currentRole: "super",
@@ -58,6 +62,9 @@ export function useAdmin(): AdminCtx {
     window.addEventListener("resize", onResize);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- sync actual viewport width once mounted in the browser
     patch({ vw: window.innerWidth });
+    fetchProducts()
+      .then((products) => patch({ products, productsLoading: false }))
+      .catch(() => patch({ productsLoading: false }));
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
@@ -96,11 +103,13 @@ export function useAdmin(): AdminCtx {
   const chartLinePath = chartPoints.map((p, i) => (i === 0 ? "M" : "L") + p.x + "," + p.y).join(" ");
   const chartAreaPath = chartLinePath + ` L ${chartPoints[n - 1].x},210 L ${chartPoints[0].x},210 Z`;
 
-  const openAddProduct = () => patch({ drawerOpen: true, editingId: null, form: emptyProductForm, colorDraft: { name: "", hex: "#111111" } });
+  const openAddProduct = () => patch({ drawerOpen: true, editingId: null, form: emptyProductForm, colorDraft: { name: "", hex: "#111111" }, imageDraftUrl: "", formError: null });
   const openEditProduct = (p: AdminState["products"][number]) =>
     patch({
       drawerOpen: true,
       editingId: p.id,
+      formError: null,
+      imageDraftUrl: "",
       form: { name: p.name, category: p.category, price: String(p.price), stock: String(p.stock), description: p.description || "", sizeType: p.sizeType, colors: p.colors, images: p.images },
       colorDraft: { name: "", hex: "#111111" },
     });
@@ -232,14 +241,19 @@ export function useAdmin(): AdminCtx {
       statusBg: p.stock === 0 ? "#f0dede" : p.stock < 6 ? "#f3ecd8" : "#eceae5",
       statusColor: "#0f0f0f",
       onEdit: () => openEditProduct(p),
-      onDelete: () => patch({ products: s.products.filter((x) => x.id !== p.id) }),
+      onDelete: () => {
+        deleteProduct(p.id).then(() => patch({ products: s.products.filter((x) => x.id !== p.id) }));
+      },
     })),
+    productsLoading: s.productsLoading,
     drawerOpen: s.drawerOpen,
     drawerTitle: s.editingId ? "Edit Product" : "Add Product",
     drawerAction: s.editingId ? "Save Changes" : "Publish Product",
     openAddProduct,
     closeDrawer,
     form: s.form,
+    formError: s.formError,
+    formLoading: s.formLoading,
     setFormName: (e) => patch({ form: { ...s.form, name: e.target.value } }),
     setFormCategory: (e) => patch({ form: { ...s.form, category: e.target.value } }),
     setFormPrice: (e) => patch({ form: { ...s.form, price: e.target.value } }),
@@ -255,43 +269,40 @@ export function useAdmin(): AdminCtx {
       patch({ form: { ...s.form, colors: [...s.form.colors, { ...s.colorDraft }] }, colorDraft: { name: "", hex: "#111111" } });
     },
     removeFormColor: (name) => patch({ form: { ...s.form, colors: s.form.colors.filter((c) => c.name !== name) } }),
-    addFormImages: (e) => {
-      const files = e.target.files;
-      if (!files || files.length === 0) return;
-      const urls = Array.from(files).map((f) => URL.createObjectURL(f));
-      patch({ form: { ...s.form, images: [...s.form.images, ...urls] } });
-      e.target.value = "";
+    imageDraftUrl: s.imageDraftUrl,
+    setImageDraftUrl: (e) => patch({ imageDraftUrl: e.target.value }),
+    addFormImage: () => {
+      if (!s.imageDraftUrl.trim()) return;
+      patch({ form: { ...s.form, images: [...s.form.images, s.imageDraftUrl.trim()] }, imageDraftUrl: "" });
     },
     removeFormImage: (url) => patch({ form: { ...s.form, images: s.form.images.filter((u) => u !== url) } }),
     submitForm: () => {
       if (!s.form.name.trim()) return;
-      const images = s.form.images.length ? s.form.images : ["/uploads/Beanie.jpg"];
-      if (s.editingId) {
-        patch({
-          products: s.products.map((p) =>
-            p.id === s.editingId
-              ? { ...p, name: s.form.name, category: s.form.category, price: Number(s.form.price) || 0, stock: Number(s.form.stock) || 0, description: s.form.description, sizeType: s.form.sizeType, colors: s.form.colors, images, image: images[0] }
-              : p
-          ),
-          drawerOpen: false,
-        });
-      } else {
-        const entry = {
-          id: nextId("new"),
-          name: s.form.name,
-          category: s.form.category,
-          price: Number(s.form.price) || 0,
-          image: images[0],
-          images,
-          colors: s.form.colors,
-          sizeType: s.form.sizeType,
-          rating: 5,
-          reviewCount: 0,
-          stock: Number(s.form.stock) || 0,
-          description: s.form.description,
-        };
-        patch({ products: [entry, ...s.products], drawerOpen: false });
+      if (s.form.colors.length === 0) {
+        patch({ formError: "Add at least one color" });
+        return;
       }
+      const input = {
+        name: s.form.name,
+        category: s.form.category as "Headwear" | "Tops" | "Bottoms",
+        sizeType: s.form.sizeType,
+        price: Number(s.form.price) || 0,
+        stock: Number(s.form.stock) || 0,
+        colors: s.form.colors,
+        images: s.form.images,
+        description: s.form.description,
+      };
+      patch({ formLoading: true, formError: null });
+      const request = s.editingId ? updateProduct(s.editingId, input) : createProduct(input);
+      request
+        .then((product) => {
+          patch({
+            products: s.editingId ? s.products.map((p) => (p.id === product.id ? product : p)) : [product, ...s.products],
+            drawerOpen: false,
+            formLoading: false,
+          });
+        })
+        .catch((err) => patch({ formLoading: false, formError: err instanceof ApiError ? err.message : "Something went wrong" }));
     },
     chartLinePath,
     chartAreaPath,

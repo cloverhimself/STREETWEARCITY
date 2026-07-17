@@ -234,15 +234,17 @@ function ProductsSection({ ctx }: { ctx: AdminCtx }) {
                     <button onClick={() => ctx.removeFormImage(url)} style={{ position: "absolute", top: 2, right: 2, background: "rgba(15,15,15,.7)", color: "#fafaf9", border: "none", borderRadius: "50%", width: 18, height: 18, cursor: "pointer", font: "600 10px Helvetica,Arial,sans-serif", lineHeight: "18px", padding: 0 }}>✕</button>
                   </div>
                 ))}
-                <label style={{ width: 56, height: 56, border: "1px dashed #cfccc6", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", font: "600 18px Helvetica,Arial,sans-serif", color: "#9c9994" }}>
-                  +
-                  <input type="file" accept="image/*" multiple onChange={ctx.addFormImages} style={{ display: "none" }} />
-                </label>
               </div>
+              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                <input placeholder="Image URL, e.g. /uploads/Beanie.jpg" value={ctx.imageDraftUrl} onChange={ctx.setImageDraftUrl} style={{ ...inputStyle, flex: 1 }} />
+                <button onClick={ctx.addFormImage} style={{ background: "#0f0f0f", color: "#fafaf9", border: "none", font: "600 11px Helvetica,Arial,sans-serif", padding: "0 16px", cursor: "pointer", borderRadius: 10 }}>Add</button>
+              </div>
+              <span style={{ font: "400 11px Helvetica,Arial,sans-serif", color: "#9c9994", display: "block", marginTop: 4 }}>Reference an already-hosted image URL, no file upload yet.</span>
             </div>
 
             <textarea placeholder="Description" value={ctx.form.description} onChange={ctx.setFormDescription} style={{ ...inputStyle, minHeight: 80 }} />
-            <button onClick={ctx.submitForm} style={{ background: "#0f0f0f", color: "#fafaf9", border: "none", font: "700 13px Helvetica,Arial,sans-serif", padding: 14, cursor: "pointer", marginTop: 8, borderRadius: 10 }}>{ctx.drawerAction}</button>
+            {ctx.formError && <span style={{ font: "600 12px Helvetica,Arial,sans-serif", color: "oklch(0.5 0.16 40)" }}>{ctx.formError}</span>}
+            <button onClick={ctx.submitForm} disabled={ctx.formLoading} style={{ background: "#0f0f0f", color: "#fafaf9", border: "none", font: "700 13px Helvetica,Arial,sans-serif", padding: 14, cursor: "pointer", marginTop: 8, borderRadius: 10, opacity: ctx.formLoading ? 0.6 : 1 }}>{ctx.formLoading ? "SAVING..." : ctx.drawerAction}</button>
           </div>
         </div>
       )}

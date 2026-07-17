@@ -13,6 +13,7 @@ export interface Product {
   price: number;
   compareAt: number | null;
   image: string;
+  images: string[];
   colors: ProductColor[];
   badge: "New" | "Low Stock" | "Bestseller" | null;
   rating: number;

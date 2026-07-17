@@ -8,15 +8,17 @@ export default function ProductDetailView({ ctx }: { ctx: StoreCtx }) {
       <div style={{ display: "grid", gridTemplateColumns: ctx.gridPdp, gap: ctx.gridGapPdp }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={{ aspectRatio: "1/1.05", overflow: "hidden", background: "#efeeeb", borderRadius: 20 }}>
-            <img src={cp.image} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: ctx.galleryPosition, transition: "transform .4s" }} alt={cp.name} />
+            <img src={ctx.galleryImage} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform .4s" }} alt={cp.name} />
           </div>
-          <div style={{ display: "flex", gap: 10 }}>
-            {ctx.galleryThumbs.map((thumb, i) => (
-              <div key={i} onClick={thumb.onClick} style={{ width: 74, height: 74, overflow: "hidden", background: "#efeeeb", cursor: "pointer", border: `2px solid ${thumb.border}`, borderRadius: 12 }}>
-                <img src={cp.image} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: thumb.position }} alt="" />
-              </div>
-            ))}
-          </div>
+          {ctx.galleryThumbs.length > 1 && (
+            <div style={{ display: "flex", gap: 10 }}>
+              {ctx.galleryThumbs.map((thumb, i) => (
+                <div key={i} onClick={thumb.onClick} style={{ width: 74, height: 74, overflow: "hidden", background: "#efeeeb", cursor: "pointer", border: `2px solid ${thumb.border}`, borderRadius: 12 }}>
+                  <img src={thumb.image} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
           <div>

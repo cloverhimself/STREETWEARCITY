@@ -45,6 +45,8 @@ export interface FaqMessage {
 
 export interface StoreState {
   view: View;
+  products: Product[];
+  productsLoading: boolean;
   activeProductId: string | null;
   cart: CartLine[];
   wishlist: string[];
@@ -105,6 +107,8 @@ export const initialShipForm: ShipForm = {
 
 export const initialState: StoreState = {
   view: "home",
+  products: [],
+  productsLoading: true,
   activeProductId: null,
   cart: [],
   wishlist: [],
@@ -205,7 +209,7 @@ export interface SizeOption {
 }
 
 export interface GalleryThumb {
-  position: string;
+  image: string;
   border: string;
   onClick: () => void;
 }
@@ -444,6 +448,7 @@ export interface StoreCtx {
   setShopSort: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   shopProducts: ProductView[];
   shopCount: number;
+  productsLoading: boolean;
 
   // product
   isProduct: boolean;
@@ -468,7 +473,7 @@ export interface StoreCtx {
   addToCartCurrent: () => void;
   currentHeartFill: string;
   toggleWishlistCurrent: () => void;
-  galleryPosition: string;
+  galleryImage: string;
   galleryThumbs: GalleryThumb[];
   accordions: Accordion[];
   reviewsList: ReviewView[];

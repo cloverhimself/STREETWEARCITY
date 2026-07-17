@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ApiError, apiFetch, clearStoredTokens, getStoredTokens, setStoredTokens, type AuthUser, type LoginResult } from "@/lib/api";
+import { fetchProducts } from "@/lib/products-api";
 import {
   ADDRESSES,
   NOTIFICATIONS,
   ORDERS,
-  PRODUCTS,
   REVIEWS_POOL,
   findProduct,
   naira,
@@ -69,6 +69,9 @@ export function useStorefront(): StoreCtx {
         .then((user) => patch({ currentUser: user }))
         .catch(() => clearStoredTokens());
     }
+    fetchProducts()
+      .then((products) => patch({ products, productsLoading: false }))
+      .catch(() => patch({ productsLoading: false }));
     const heroTimer = setInterval(() => patch((s) => ({ heroIdx: (s.heroIdx + 1) % 3 })), 4500);
     return () => {
       window.removeEventListener("resize", onResize);
@@ -101,20 +104,38 @@ export function useStorefront(): StoreCtx {
   const isMobile = s.vw < 860;
   const wishedProducts = (list: Product[]) => wishedList(list, s.wishlist, s.cart);
 
-  let shopList = PRODUCTS.filter((p) => s.shopCategory === "All" || p.category === s.shopCategory);
+  let shopList = s.products.filter((p) => s.shopCategory === "All" || p.category === s.shopCategory);
   if (s.shopSort === "PriceLow") shopList = [...shopList].sort((a, b) => a.price - b.price);
   else if (s.shopSort === "PriceHigh") shopList = [...shopList].sort((a, b) => b.price - a.price);
   else if (s.shopSort === "Newest") shopList = [...shopList].reverse();
   const categories = ["All", "Headwear", "Tops", "Bottoms"];
 
-  const cp = findProduct(s.activeProductId ?? undefined) || PRODUCTS[0];
+  const EMPTY_PRODUCT: Product = {
+    id: "",
+    name: "",
+    category: "Headwear",
+    sizeType: "adjustable",
+    price: 0,
+    compareAt: null,
+    image: "",
+    images: [],
+    colors: [{ name: "", hex: "#000000" }],
+    badge: null,
+    rating: 0,
+    reviewCount: 0,
+    stock: 0,
+    sku: "",
+    description: "",
+    details: "",
+  };
+  const cp = findProduct(s.products, s.activeProductId ?? undefined) || s.products[0] || EMPTY_PRODUCT;
   const cpColor = s.pdpColor || cp.colors[0].name;
   const cpSize = s.pdpSize || sizesFor(cp)[0];
-  const related = wishedProducts(PRODUCTS.filter((p) => p.category === cp.category && p.id !== cp.id).slice(0, 4));
-  const galleryPositions = ["center", "top", "bottom"];
+  const related = wishedProducts(s.products.filter((p) => p.category === cp.category && p.id !== cp.id).slice(0, 4));
+  const cpImages = cp.images.length ? cp.images : cp.image ? [cp.image] : [];
 
   const cartLines = s.cart.map((line, i) => {
-    const p = findProduct(line.productId)!;
+    const p = findProduct(s.products, line.productId) ?? EMPTY_PRODUCT;
     return {
       key: i,
       image: p.image,
@@ -161,7 +182,7 @@ export function useStorefront(): StoreCtx {
     showToast(wasWishlisted ? "Removed from wishlist" : "Added to wishlist");
   };
   const quickAdd = (id: string) => {
-    const p = findProduct(id);
+    const p = findProduct(s.products, id);
     if (!p) return;
     addLine(id, p.colors[0].name, sizesFor(p)[0], 1);
     showToast("Added to bag");
@@ -184,8 +205,11 @@ export function useStorefront(): StoreCtx {
 
   const selectedOrder = ORDERS.find((x) => x.id === s.selectedOrderId) || ORDERS[0];
   const selectedOrderItems = selectedOrder.items.map((it) => {
-    const p = findProduct(it.productId)!;
-    return { image: p.image, name: p.name, variantLabel: it.color + " · " + it.size, qty: it.qty };
+    // ORDERS is still mock data (order history isn't wired to the API yet) and
+    // references product IDs from the old static catalog, which won't match the
+    // real fetched IDs — fall back gracefully instead of assuming a match.
+    const p = findProduct(s.products, it.productId);
+    return { image: p?.image ?? "", name: p?.name ?? "Product", variantLabel: it.color + " · " + it.size, qty: it.qty };
   });
   const labels = ["Placed", "Confirmed", "Packed", "Shipped"];
   const stepMap = Math.min(4, Math.ceil(selectedOrder.trackingStep / 1.5));
@@ -394,17 +418,21 @@ export function useStorefront(): StoreCtx {
       { name: "TOPS", image: "/uploads/Jerseyshirt1.jpg", onClick: () => { patch({ shopCategory: "Tops" }); goTo("shop"); } },
       { name: "BOTTOMS", image: "/uploads/DenimJeans2.jpg", onClick: () => { patch({ shopCategory: "Bottoms" }); goTo("shop"); } },
     ],
-    newArrivals: wishedProducts(PRODUCTS.filter((p) => p.badge === "New").slice(0, 4)),
-    trending: wishedProducts([PRODUCTS[5], PRODUCTS[9], PRODUCTS[3], PRODUCTS[7]]),
+    newArrivals: wishedProducts(s.products.filter((p) => p.badge === "New").slice(0, 4)),
+    // No real "trending" signal exists yet (would need order/view data), so this
+    // is a stand-in slice rather than the old hardcoded mock-array indices, which
+    // would have silently pointed at the wrong products, or crashed, once the
+    // array stopped being the fixed 14-item mock.
+    trending: wishedProducts(s.products.slice(4, 8)),
     bestSellers: wishedProducts(
-      PRODUCTS.filter((p) => p.badge === "Bestseller").concat(PRODUCTS.filter((p) => p.badge !== "Bestseller")).slice(0, 4)
+      s.products.filter((p) => p.badge === "Bestseller").concat(s.products.filter((p) => p.badge !== "Bestseller")).slice(0, 4)
     ),
     promoSlides: [
       { image: "/uploads/DenimJeans.jpg", title: "BAGGY DENIM RESTOCK", sub: "Curved seam construction, back in stock." },
       { image: "/uploads/Jerseyshirt2.jpg", title: "ARCHIVE JERSEY PULLS", sub: "Verified authentic consignment drops weekly." },
       { image: "/uploads/croptop1.jpg", title: "CROP SEASON", sub: "Graphic tees cut for the city heat." },
     ],
-    instaTiles: [PRODUCTS[3].image, PRODUCTS[6].image, PRODUCTS[9].image, PRODUCTS[7].image, PRODUCTS[0].image, PRODUCTS[11].image],
+    instaTiles: s.products.slice(0, 6).map((p) => p.image),
     newsletterEmail: s.newsletterEmail,
     setNewsletterEmail: (e) => patch({ newsletterEmail: e.target.value }),
     submitNewsletter: (e) => {
@@ -428,6 +456,7 @@ export function useStorefront(): StoreCtx {
     setShopSort: (e) => patch({ shopSort: e.target.value }),
     shopProducts: wishedProducts(shopList),
     shopCount: shopList.length,
+    productsLoading: s.productsLoading,
 
     isProduct: s.view === "product",
     currentProduct: cp,
@@ -474,9 +503,9 @@ export function useStorefront(): StoreCtx {
       patch({ wishlist: w });
       showToast(wasWishlisted ? "Removed from wishlist" : "Added to wishlist");
     },
-    galleryPosition: galleryPositions[s.pdpGalleryIdx],
-    galleryThumbs: galleryPositions.map((pos, i) => ({
-      position: pos,
+    galleryImage: cpImages[s.pdpGalleryIdx] ?? cpImages[0] ?? "",
+    galleryThumbs: cpImages.map((image, i) => ({
+      image,
       border: i === s.pdpGalleryIdx ? "#0f0f0f" : "transparent",
       onClick: () => patch({ pdpGalleryIdx: i }),
     })),
@@ -510,7 +539,7 @@ export function useStorefront(): StoreCtx {
     isWishlist: s.view === "wishlist",
     hasWishlist: s.wishlist.length > 0,
     wishlistEmpty: s.wishlist.length === 0,
-    wishlistProducts: wishedProducts(PRODUCTS.filter((p) => s.wishlist.includes(p.id))),
+    wishlistProducts: wishedProducts(s.products.filter((p) => s.wishlist.includes(p.id))),
 
     isCheckout: s.view === "checkout",
     checkoutDone: s.checkoutDone,
@@ -690,7 +719,7 @@ export function useStorefront(): StoreCtx {
       onClick: () => patch({ footerOpenSection: s.footerOpenSection === f.key ? null : f.key }),
     })),
     trendingSearches: ["baggy jeans", "fitted cap", "crop tee", "mesh jersey", "beanie"],
-    searchSuggestions: wishedProducts(PRODUCTS.slice(0, 4)),
+    searchSuggestions: wishedProducts(s.products.slice(0, 4)),
 
     toast: s.toast,
   };

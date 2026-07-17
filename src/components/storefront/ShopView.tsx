@@ -23,11 +23,15 @@ export default function ShopView({ ctx }: { ctx: StoreCtx }) {
           </select>
         </div>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: "24px 20px" }}>
-        {ctx.shopProducts.map((p) => (
-          <ProductCard key={p.id} product={p} wishlisted={p.wished} onOpen={ctx.goProduct} onToggle={ctx.toggleWishlist} onQuickAdd={ctx.quickAdd} onDecrement={ctx.quickDecrement} cartQty={p.cartQty} />
-        ))}
-      </div>
+      {ctx.productsLoading && ctx.shopProducts.length === 0 ? (
+        <p style={{ font: "400 13px Helvetica,Arial,sans-serif", color: "#6b6b6b" }}>Loading products...</p>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: "24px 20px" }}>
+          {ctx.shopProducts.map((p) => (
+            <ProductCard key={p.id} product={p} wishlisted={p.wished} onOpen={ctx.goProduct} onToggle={ctx.toggleWishlist} onQuickAdd={ctx.quickAdd} onDecrement={ctx.quickDecrement} cartQty={p.cartQty} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -89,7 +89,11 @@ export interface AdminState {
   drawerOpen: boolean;
   editingId: string | null;
   form: ProductForm;
+  formError: string | null;
+  formLoading: boolean;
   colorDraft: { name: string; hex: string };
+  imageDraftUrl: string;
+  productsLoading: boolean;
   vw: number;
   mobileNavOpen: boolean;
   currentRole: AdminRole;
@@ -252,6 +256,9 @@ export interface AdminCtx {
   openAddProduct: () => void;
   closeDrawer: () => void;
   form: ProductForm;
+  formError: string | null;
+  formLoading: boolean;
+  productsLoading: boolean;
   setFormName: (e: React.ChangeEvent<HTMLInputElement>) => void;
   setFormCategory: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   setFormPrice: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -264,7 +271,9 @@ export interface AdminCtx {
   setColorDraftHex: (e: React.ChangeEvent<HTMLInputElement>) => void;
   addColorDraft: () => void;
   removeFormColor: (name: string) => void;
-  addFormImages: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  imageDraftUrl: string;
+  setImageDraftUrl: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  addFormImage: () => void;
   removeFormImage: (url: string) => void;
   submitForm: () => void;
   chartLinePath: string;
