@@ -1,8 +1,9 @@
+import type { AuthUser } from "@/lib/api";
 import type { Address, CartLine, Notification, Order, Product } from "@/lib/types";
 
 export type View = "home" | "shop" | "product" | "wishlist" | "checkout" | "account";
 export type AuthTabKey = "login" | "register" | "forgot" | "verify";
-export type ForgotStep = "request" | "reset";
+export type ForgotStep = "request" | "sent";
 export type DeliveryMethod = "standard" | "express" | "pickup";
 export type AccountSection = "overview" | "orders" | "order-detail" | "addresses" | "notifications" | "settings";
 export type PaymentStage = "review" | "redirecting" | "verifying";
@@ -53,10 +54,14 @@ export interface StoreState {
   filterOpen: boolean;
   authOpen: boolean;
   authTab: AuthTabKey;
-  isLoggedIn: boolean;
+  currentUser: AuthUser | null;
+  loginForm: { email: string; password: string };
+  registerForm: { name: string; email: string; password: string };
+  forgotEmail: string;
+  authError: string | null;
+  authLoading: boolean;
   showLoginPw: boolean;
   showRegPw: boolean;
-  showNewPw: boolean;
   forgotStep: ForgotStep;
   checkoutStep: number;
   checkoutDone: boolean;
@@ -109,10 +114,14 @@ export const initialState: StoreState = {
   filterOpen: false,
   authOpen: false,
   authTab: "login",
-  isLoggedIn: false,
+  currentUser: null,
+  loginForm: { email: "", password: "" },
+  registerForm: { name: "", email: "", password: "" },
+  forgotEmail: "",
+  authError: null,
+  authLoading: false,
   showLoginPw: false,
   showRegPw: false,
-  showNewPw: false,
   forgotStep: "request",
   checkoutStep: 0,
   checkoutDone: false,
@@ -363,7 +372,6 @@ export interface StoreCtx {
   goAccountOrdersClick: () => void;
   goAuthClick: (e?: React.SyntheticEvent) => void;
   goForgotClick: (e: React.SyntheticEvent) => void;
-  goVerifyClick: () => void;
   openSearch: () => void;
   closeSearch: () => void;
   searchOpen: boolean;
@@ -382,19 +390,30 @@ export interface StoreCtx {
   isForgotTab: boolean;
   isVerifyTab: boolean;
   isForgotRequestStep: boolean;
-  isForgotResetStep: boolean;
-  submitAuth: () => void;
-  sendResetCode: () => void;
-  submitNewPassword: () => void;
+  isForgotSentStep: boolean;
+  currentUser: AuthUser | null;
+  isLoggedIn: boolean;
+  authError: string | null;
+  authLoading: boolean;
+  loginForm: { email: string; password: string };
+  setLoginEmail: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  setLoginPassword: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  submitLogin: () => void;
+  registerForm: { name: string; email: string; password: string };
+  setRegisterName: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  setRegisterEmail: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  setRegisterPassword: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  submitRegister: () => void;
+  forgotEmail: string;
+  setForgotEmail: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  submitForgotRequest: () => void;
+  logout: () => void;
   loginPwType: string;
   showLoginPw: boolean;
   toggleLoginPw: () => void;
   regPwType: string;
   showRegPw: boolean;
   toggleRegPw: () => void;
-  newPwType: string;
-  showNewPw: boolean;
-  toggleNewPw: () => void;
 
   // wishlist/cart helpers
   toggleWishlist: (id: string) => void;

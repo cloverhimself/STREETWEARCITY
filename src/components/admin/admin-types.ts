@@ -100,6 +100,7 @@ export interface AdminState {
   authenticated: boolean;
   loginForm: AdminLoginForm;
   loginError: string | null;
+  loginLoading: boolean;
   stockChangeLog: StockChangeLogEntry[];
   settings: AdminSettings;
 }
@@ -204,6 +205,7 @@ export interface AdminCtx {
   authenticated: boolean;
   loginForm: AdminLoginForm;
   loginError: string | null;
+  loginLoading: boolean;
   setLoginEmail: (e: React.ChangeEvent<HTMLInputElement>) => void;
   setLoginPassword: (e: React.ChangeEvent<HTMLInputElement>) => void;
   submitAdminLogin: (e: React.FormEvent) => void;

@@ -1,4 +1,3 @@
-import { useRef, useState } from "react";
 import type { StoreCtx } from "./storefront-types";
 
 const authInputStyle: React.CSSProperties = { padding: "14px 16px", border: "1px solid #cfccc6", font: "400 13px Helvetica,Arial,sans-serif", borderRadius: 12 };
@@ -26,63 +25,8 @@ function PwToggle({ shown, onClick }: { shown: boolean; onClick: () => void }) {
   );
 }
 
-const OTP_LENGTH = 6;
-
-function OtpInput({ onComplete }: { onComplete: () => void }) {
-  const [digits, setDigits] = useState<string[]>(Array(OTP_LENGTH).fill(""));
-  const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
-
-  const handleChange = (i: number, raw: string) => {
-    const value = raw.replace(/[^0-9]/g, "").slice(-1);
-    const next = [...digits];
-    next[i] = value;
-    setDigits(next);
-    if (value && i < OTP_LENGTH - 1) {
-      inputsRef.current[i + 1]?.focus();
-    } else if (value && i === OTP_LENGTH - 1 && next.every((d) => d)) {
-      onComplete();
-    }
-  };
-
-  const handleKeyDown = (i: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Backspace" && !digits[i] && i > 0) {
-      inputsRef.current[i - 1]?.focus();
-    }
-  };
-
-  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-    const pasted = e.clipboardData.getData("text").replace(/[^0-9]/g, "").slice(0, OTP_LENGTH);
-    if (!pasted) return;
-    e.preventDefault();
-    const next = Array(OTP_LENGTH).fill("");
-    for (let i = 0; i < pasted.length; i++) next[i] = pasted[i];
-    setDigits(next);
-    const focusIdx = Math.min(pasted.length, OTP_LENGTH - 1);
-    inputsRef.current[focusIdx]?.focus();
-    if (pasted.length === OTP_LENGTH) onComplete();
-  };
-
-  return (
-    <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-      {digits.map((d, i) => (
-        <input
-          key={i}
-          ref={(el) => {
-            inputsRef.current[i] = el;
-          }}
-          value={d}
-          onChange={(e) => handleChange(i, e.target.value)}
-          onKeyDown={(e) => handleKeyDown(i, e)}
-          onPaste={handlePaste}
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          maxLength={1}
-          aria-label={`Digit ${i + 1}`}
-          style={{ width: 42, height: 52, textAlign: "center", padding: 0, border: "1px solid #cfccc6", font: "700 18px Helvetica,Arial,sans-serif", borderRadius: 12, boxSizing: "border-box" }}
-        />
-      ))}
-    </div>
-  );
+function AuthError({ message }: { message: string }) {
+  return <p style={{ font: "600 12px Helvetica,Arial,sans-serif", color: "oklch(0.5 0.16 40)", margin: 0, textAlign: "center" }}>{message}</p>;
 }
 
 export default function AuthModal({ ctx }: { ctx: StoreCtx }) {
@@ -103,13 +47,14 @@ export default function AuthModal({ ctx }: { ctx: StoreCtx }) {
         {ctx.isLoginTab && (
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <h1 style={{ font: "800 21px Arial Black,Arial,sans-serif", margin: "0 0 2px", textAlign: "center" }}>WELCOME BACK</h1>
-            <input placeholder="Email" style={authInputStyle} />
+            <input placeholder="Email" type="email" value={ctx.loginForm.email} onChange={ctx.setLoginEmail} style={authInputStyle} />
             <div style={{ position: "relative" }}>
-              <input placeholder="Password" type={ctx.loginPwType} style={{ ...authInputStyle, width: "100%", padding: "14px 44px 14px 16px", boxSizing: "border-box" }} />
+              <input placeholder="Password" type={ctx.loginPwType} value={ctx.loginForm.password} onChange={ctx.setLoginPassword} style={{ ...authInputStyle, width: "100%", padding: "14px 44px 14px 16px", boxSizing: "border-box" }} />
               <PwToggle shown={ctx.showLoginPw} onClick={ctx.toggleLoginPw} />
             </div>
             <a href="#" onClick={ctx.goForgotClick} style={{ font: "400 12px Helvetica,Arial,sans-serif", textDecoration: "underline", alignSelf: "flex-end" }}>Forgot password?</a>
-            <button onClick={ctx.submitAuth} style={{ background: "#0f0f0f", color: "#fafaf9", border: "none", font: "700 13px Helvetica,Arial,sans-serif", letterSpacing: ".05em", padding: 15, cursor: "pointer", marginTop: 6, borderRadius: 999 }}>LOG IN</button>
+            {ctx.authError && <AuthError message={ctx.authError} />}
+            <button onClick={ctx.submitLogin} disabled={ctx.authLoading} style={{ background: "#0f0f0f", color: "#fafaf9", border: "none", font: "700 13px Helvetica,Arial,sans-serif", letterSpacing: ".05em", padding: 15, cursor: "pointer", marginTop: 6, borderRadius: 999, opacity: ctx.authLoading ? 0.6 : 1 }}>{ctx.authLoading ? "LOGGING IN..." : "LOG IN"}</button>
             <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "2px 0" }}>
               <div style={{ flex: 1, height: 1, background: "#e6e3de" }} /><span style={{ font: "400 11px Helvetica,Arial,sans-serif", color: "#9c9994" }}>OR</span><div style={{ flex: 1, height: 1, background: "#e6e3de" }} />
             </div>
@@ -122,13 +67,14 @@ export default function AuthModal({ ctx }: { ctx: StoreCtx }) {
         {ctx.isRegisterTab && (
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <h1 style={{ font: "800 21px Arial Black,Arial,sans-serif", margin: "0 0 2px", textAlign: "center" }}>CREATE ACCOUNT</h1>
-            <input placeholder="Full name" style={authInputStyle} />
-            <input placeholder="Email" style={authInputStyle} />
+            <input placeholder="Full name" value={ctx.registerForm.name} onChange={ctx.setRegisterName} style={authInputStyle} />
+            <input placeholder="Email" type="email" value={ctx.registerForm.email} onChange={ctx.setRegisterEmail} style={authInputStyle} />
             <div style={{ position: "relative" }}>
-              <input placeholder="Password" type={ctx.regPwType} style={{ ...authInputStyle, width: "100%", padding: "14px 44px 14px 16px", boxSizing: "border-box" }} />
+              <input placeholder="Password" type={ctx.regPwType} value={ctx.registerForm.password} onChange={ctx.setRegisterPassword} style={{ ...authInputStyle, width: "100%", padding: "14px 44px 14px 16px", boxSizing: "border-box" }} />
               <PwToggle shown={ctx.showRegPw} onClick={ctx.toggleRegPw} />
             </div>
-            <button onClick={ctx.goVerifyClick} style={{ background: "#0f0f0f", color: "#fafaf9", border: "none", font: "700 13px Helvetica,Arial,sans-serif", letterSpacing: ".05em", padding: 15, cursor: "pointer", marginTop: 6, borderRadius: 999 }}>CREATE ACCOUNT</button>
+            {ctx.authError && <AuthError message={ctx.authError} />}
+            <button onClick={ctx.submitRegister} disabled={ctx.authLoading} style={{ background: "#0f0f0f", color: "#fafaf9", border: "none", font: "700 13px Helvetica,Arial,sans-serif", letterSpacing: ".05em", padding: 15, cursor: "pointer", marginTop: 6, borderRadius: 999, opacity: ctx.authLoading ? 0.6 : 1 }}>{ctx.authLoading ? "CREATING ACCOUNT..." : "CREATE ACCOUNT"}</button>
             <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "2px 0" }}>
               <div style={{ flex: 1, height: 1, background: "#e6e3de" }} /><span style={{ font: "400 11px Helvetica,Arial,sans-serif", color: "#9c9994" }}>OR</span><div style={{ flex: 1, height: 1, background: "#e6e3de" }} />
             </div>
@@ -143,23 +89,18 @@ export default function AuthModal({ ctx }: { ctx: StoreCtx }) {
             {ctx.isForgotRequestStep && (
               <>
                 <h1 style={{ font: "800 21px Arial Black,Arial,sans-serif", margin: "0 0 2px", textAlign: "center" }}>RESET PASSWORD</h1>
-                <p style={{ font: "400 13px/1.5 Helvetica,Arial,sans-serif", color: "#6b6b6b", margin: 0, textAlign: "center" }}>Enter your email and we will send a reset code.</p>
-                <input placeholder="Email" style={authInputStyle} />
-                <button onClick={ctx.sendResetCode} style={{ background: "#0f0f0f", color: "#fafaf9", border: "none", font: "700 13px Helvetica,Arial,sans-serif", letterSpacing: ".05em", padding: 15, cursor: "pointer", marginTop: 6, borderRadius: 999 }}>SEND RESET CODE</button>
+                <p style={{ font: "400 13px/1.5 Helvetica,Arial,sans-serif", color: "#6b6b6b", margin: 0, textAlign: "center" }}>Enter your email and we will send a reset link.</p>
+                <input placeholder="Email" type="email" value={ctx.forgotEmail} onChange={ctx.setForgotEmail} style={authInputStyle} />
+                {ctx.authError && <AuthError message={ctx.authError} />}
+                <button onClick={ctx.submitForgotRequest} disabled={ctx.authLoading} style={{ background: "#0f0f0f", color: "#fafaf9", border: "none", font: "700 13px Helvetica,Arial,sans-serif", letterSpacing: ".05em", padding: 15, cursor: "pointer", marginTop: 6, borderRadius: 999, opacity: ctx.authLoading ? 0.6 : 1 }}>{ctx.authLoading ? "SENDING..." : "SEND RESET LINK"}</button>
               </>
             )}
-            {ctx.isForgotResetStep && (
-              <>
-                <h1 style={{ font: "800 21px Arial Black,Arial,sans-serif", margin: "0 0 2px", textAlign: "center" }}>SET NEW PASSWORD</h1>
-                <p style={{ font: "400 13px/1.5 Helvetica,Arial,sans-serif", color: "#6b6b6b", margin: 0, textAlign: "center" }}>Enter the code we sent and choose a new password.</p>
-                <input placeholder="Reset code" style={authInputStyle} />
-                <div style={{ position: "relative" }}>
-                  <input placeholder="New password" type={ctx.newPwType} style={{ ...authInputStyle, width: "100%", padding: "14px 44px 14px 16px", boxSizing: "border-box" }} />
-                  <PwToggle shown={ctx.showNewPw} onClick={ctx.toggleNewPw} />
-                </div>
-                <input placeholder="Confirm new password" type={ctx.newPwType} style={authInputStyle} />
-                <button onClick={ctx.submitNewPassword} style={{ background: "#0f0f0f", color: "#fafaf9", border: "none", font: "700 13px Helvetica,Arial,sans-serif", letterSpacing: ".05em", padding: 15, cursor: "pointer", marginTop: 6, borderRadius: 999 }}>RESET PASSWORD</button>
-              </>
+            {ctx.isForgotSentStep && (
+              <div style={{ textAlign: "center", display: "flex", flexDirection: "column", gap: 14, alignItems: "center" }}>
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#0f0f0f" strokeWidth="1.6"><rect x="2.5" y="5" width="19" height="14" rx="1.5" /><path d="M3 6.5l9 6 9-6" /></svg>
+                <h1 style={{ font: "800 19px Arial Black,Arial,sans-serif", margin: 0 }}>CHECK YOUR EMAIL</h1>
+                <p style={{ font: "400 13px/1.6 Helvetica,Arial,sans-serif", color: "#6b6b6b", margin: 0 }}>If an account exists for that email, we sent a link to reset your password.</p>
+              </div>
             )}
           </div>
         )}
@@ -168,9 +109,7 @@ export default function AuthModal({ ctx }: { ctx: StoreCtx }) {
           <div style={{ display: "flex", flexDirection: "column", gap: 14, textAlign: "center", alignItems: "center" }}>
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#0f0f0f" strokeWidth="1.6"><rect x="2.5" y="5" width="19" height="14" rx="1.5" /><path d="M3 6.5l9 6 9-6" /></svg>
             <h1 style={{ font: "800 19px Arial Black,Arial,sans-serif", margin: 0 }}>VERIFY YOUR EMAIL</h1>
-            <p style={{ font: "400 13px/1.6 Helvetica,Arial,sans-serif", color: "#6b6b6b", margin: 0 }}>We sent a 6 digit code to your email. Enter it below to activate your account.</p>
-            <OtpInput onComplete={ctx.submitAuth} />
-            <button onClick={ctx.submitAuth} style={{ width: "100%", background: "#0f0f0f", color: "#fafaf9", border: "none", font: "700 13px Helvetica,Arial,sans-serif", letterSpacing: ".05em", padding: 15, cursor: "pointer", marginTop: 6, borderRadius: 999 }}>VERIFY</button>
+            <p style={{ font: "400 13px/1.6 Helvetica,Arial,sans-serif", color: "#6b6b6b", margin: 0 }}>We sent a verification link to your email. Click it to activate your account, then log in below.</p>
           </div>
         )}
       </div>

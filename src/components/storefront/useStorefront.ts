@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { ApiError, apiFetch, clearStoredTokens, getStoredTokens, setStoredTokens, type AuthUser, type LoginResult } from "@/lib/api";
 import {
   ADDRESSES,
   NOTIFICATIONS,
@@ -62,6 +63,11 @@ export function useStorefront(): StoreCtx {
     if (pendingView) {
       sessionStorage.removeItem(PENDING_VIEW_KEY);
       patch({ view: pendingView as StoreState["view"] });
+    }
+    if (getStoredTokens()) {
+      apiFetch<AuthUser>("/auth/me")
+        .then((user) => patch({ currentUser: user }))
+        .catch(() => clearStoredTokens());
     }
     const heroTimer = setInterval(() => patch((s) => ({ heroIdx: (s.heroIdx + 1) % 3 })), 4500);
     return () => {
@@ -232,7 +238,7 @@ export function useStorefront(): StoreCtx {
     navAccountBg: activeBg(navAccountActive),
     navAccountColor: activeColor(navAccountActive),
     navAccountClick: () => {
-      if (!s.isLoggedIn) {
+      if (!s.currentUser) {
         patch({ authOpen: true, authTab: "login" });
         return;
       }
@@ -270,7 +276,7 @@ export function useStorefront(): StoreCtx {
     },
     goAccountClick: (e) => {
       e?.preventDefault();
-      if (!s.isLoggedIn) {
+      if (!s.currentUser) {
         patch({ authOpen: true, authTab: "login" });
         return;
       }
@@ -286,7 +292,6 @@ export function useStorefront(): StoreCtx {
       e.preventDefault();
       patch({ authTab: "forgot" });
     },
-    goVerifyClick: () => patch({ authTab: "verify" }),
     openSearch: () => patch({ searchOpen: true }),
     closeSearch: () => patch({ searchOpen: false }),
     searchOpen: s.searchOpen,
@@ -315,19 +320,56 @@ export function useStorefront(): StoreCtx {
     isForgotTab: s.authTab === "forgot",
     isVerifyTab: s.authTab === "verify",
     isForgotRequestStep: s.forgotStep === "request",
-    isForgotResetStep: s.forgotStep === "reset",
-    submitAuth: () => {
-      patch({ isLoggedIn: true, authOpen: false, view: "account", accountSection: "overview" });
+    isForgotSentStep: s.forgotStep === "sent",
+    currentUser: s.currentUser,
+    isLoggedIn: !!s.currentUser,
+    authError: s.authError,
+    authLoading: s.authLoading,
+    loginForm: s.loginForm,
+    setLoginEmail: (e) => patch({ loginForm: { ...s.loginForm, email: e.target.value }, authError: null }),
+    setLoginPassword: (e) => patch({ loginForm: { ...s.loginForm, password: e.target.value }, authError: null }),
+    submitLogin: () => {
+      if (!s.loginForm.email.trim() || !s.loginForm.password) return;
+      patch({ authLoading: true, authError: null });
+      apiFetch<LoginResult>("/auth/login", { method: "POST", body: JSON.stringify(s.loginForm) })
+        .then((result) => {
+          setStoredTokens(result);
+          patch({ currentUser: result.user, authOpen: false, authLoading: false, loginForm: { email: "", password: "" }, view: "account", accountSection: "overview" });
+          window.scrollTo(0, 0);
+          showToast("Welcome back");
+        })
+        .catch((err) => patch({ authLoading: false, authError: err instanceof ApiError ? err.message : "Something went wrong" }));
+    },
+    registerForm: s.registerForm,
+    setRegisterName: (e) => patch({ registerForm: { ...s.registerForm, name: e.target.value }, authError: null }),
+    setRegisterEmail: (e) => patch({ registerForm: { ...s.registerForm, email: e.target.value }, authError: null }),
+    setRegisterPassword: (e) => patch({ registerForm: { ...s.registerForm, password: e.target.value }, authError: null }),
+    submitRegister: () => {
+      const { name, email, password } = s.registerForm;
+      if (!name.trim() || !email.trim() || !password) return;
+      const [firstName, ...rest] = name.trim().split(" ");
+      patch({ authLoading: true, authError: null });
+      apiFetch("/auth/register", {
+        method: "POST",
+        body: JSON.stringify({ email, password, firstName, lastName: rest.join(" ") || firstName }),
+      })
+        .then(() => patch({ authTab: "verify", authLoading: false, registerForm: { name: "", email: "", password: "" } }))
+        .catch((err) => patch({ authLoading: false, authError: err instanceof ApiError ? err.message : "Something went wrong" }));
+    },
+    forgotEmail: s.forgotEmail,
+    setForgotEmail: (e) => patch({ forgotEmail: e.target.value, authError: null }),
+    submitForgotRequest: () => {
+      if (!s.forgotEmail.trim()) return;
+      patch({ authLoading: true, authError: null });
+      apiFetch("/auth/request-password-reset", { method: "POST", body: JSON.stringify({ email: s.forgotEmail }) })
+        .then(() => patch({ forgotStep: "sent", authLoading: false }))
+        .catch((err) => patch({ authLoading: false, authError: err instanceof ApiError ? err.message : "Something went wrong" }));
+    },
+    logout: () => {
+      clearStoredTokens();
+      patch({ currentUser: null, view: "home", accountSection: "overview" });
       window.scrollTo(0, 0);
-      showToast("Welcome to Streetwear City");
-    },
-    sendResetCode: () => {
-      patch({ forgotStep: "reset" });
-      showToast("Reset code sent to your email");
-    },
-    submitNewPassword: () => {
-      patch({ authTab: "login", forgotStep: "request" });
-      showToast("Password updated, please log in");
+      showToast("Logged out");
     },
     loginPwType: s.showLoginPw ? "text" : "password",
     showLoginPw: s.showLoginPw,
@@ -335,9 +377,6 @@ export function useStorefront(): StoreCtx {
     regPwType: s.showRegPw ? "text" : "password",
     showRegPw: s.showRegPw,
     toggleRegPw: () => patch({ showRegPw: !s.showRegPw }),
-    newPwType: s.showNewPw ? "text" : "password",
-    showNewPw: s.showNewPw,
-    toggleNewPw: () => patch({ showNewPw: !s.showNewPw }),
 
     toggleWishlist,
     quickAdd,

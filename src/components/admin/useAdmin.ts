@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ApiError, apiFetch, clearStoredTokens, setStoredTokens, type LoginResult } from "@/lib/api";
 import { sizesFor } from "@/lib/data";
 import {
   ACTIVITY_LOGS,
@@ -34,6 +35,7 @@ const initialState: AdminState = {
   authenticated: false,
   loginForm: { email: "", password: "" },
   loginError: null,
+  loginLoading: false,
   stockChangeLog: [],
   settings: { storeName: "Streetwear City", supportEmail: "support@streetwearcity.com", notifyLowStock: true, notifyNewOrders: true },
 };
@@ -145,6 +147,7 @@ export function useAdmin(): AdminCtx {
     authenticated: s.authenticated,
     loginForm: s.loginForm,
     loginError: s.loginError,
+    loginLoading: s.loginLoading,
     setLoginEmail: (e) => patch({ loginForm: { ...s.loginForm, email: e.target.value }, loginError: null }),
     setLoginPassword: (e) => patch({ loginForm: { ...s.loginForm, password: e.target.value }, loginError: null }),
     submitAdminLogin: (e) => {
@@ -153,9 +156,22 @@ export function useAdmin(): AdminCtx {
         patch({ loginError: "Enter your email and password" });
         return;
       }
-      patch({ authenticated: true, loginError: null, loginForm: { email: "", password: "" } });
+      patch({ loginLoading: true, loginError: null });
+      apiFetch<LoginResult>("/auth/login", { method: "POST", body: JSON.stringify(s.loginForm) })
+        .then((result) => {
+          if (result.permissions.length === 0) {
+            patch({ loginLoading: false, loginError: "This account does not have admin access" });
+            return;
+          }
+          setStoredTokens(result);
+          patch({ authenticated: true, loginLoading: false, loginError: null, loginForm: { email: "", password: "" } });
+        })
+        .catch((err) => patch({ loginLoading: false, loginError: err instanceof ApiError ? err.message : "Something went wrong" }));
     },
-    logoutAdmin: () => patch({ authenticated: false }),
+    logoutAdmin: () => {
+      clearStoredTokens();
+      patch({ authenticated: false });
+    },
     adminNavItems: navBase.map((it) => ({ ...it, onClick: () => patch({ adminView: it.key }), bg: s.adminView === it.key ? "#fafaf9" : "transparent", color: s.adminView === it.key ? "#0f0f0f" : "#c9c6c0" })),
     adminNavItemsMobile: navBase.map((it) => ({ ...it, onClick: () => patch({ adminView: it.key, mobileNavOpen: false }), bg: s.adminView === it.key ? "rgba(255,255,255,.1)" : "transparent", color: s.adminView === it.key ? "#fafaf9" : "#c9c6c0" })),
     isOverview: s.adminView === "overview",

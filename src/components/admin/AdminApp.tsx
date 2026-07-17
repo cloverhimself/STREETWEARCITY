@@ -70,7 +70,7 @@ function AdminLoginView({ ctx }: { ctx: AdminCtx }) {
         <input placeholder="Email" type="email" value={ctx.loginForm.email} onChange={ctx.setLoginEmail} style={inputStyle} />
         <input placeholder="Password" type="password" value={ctx.loginForm.password} onChange={ctx.setLoginPassword} style={inputStyle} />
         {ctx.loginError && <span style={{ font: "600 12px Helvetica,Arial,sans-serif", color: "oklch(0.5 0.16 40)" }}>{ctx.loginError}</span>}
-        <button type="submit" style={{ background: "#0f0f0f", color: "#fafaf9", border: "none", font: "700 13px Helvetica,Arial,sans-serif", letterSpacing: ".05em", padding: 15, cursor: "pointer", marginTop: 6, borderRadius: 999 }}>LOG IN</button>
+        <button type="submit" disabled={ctx.loginLoading} style={{ background: "#0f0f0f", color: "#fafaf9", border: "none", font: "700 13px Helvetica,Arial,sans-serif", letterSpacing: ".05em", padding: 15, cursor: "pointer", marginTop: 6, borderRadius: 999, opacity: ctx.loginLoading ? 0.6 : 1 }}>{ctx.loginLoading ? "LOGGING IN..." : "LOG IN"}</button>
         <Link href="/" style={{ textAlign: "center", font: "600 12px Helvetica,Arial,sans-serif", color: "#6b6b6b" }}>← Back to storefront</Link>
       </form>
     </div>

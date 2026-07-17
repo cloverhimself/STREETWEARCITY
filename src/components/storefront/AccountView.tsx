@@ -183,7 +183,10 @@ export default function AccountView({ ctx }: { ctx: StoreCtx }) {
                 </label>
               ))}
             </div>
-            <button onClick={ctx.notifySaved} style={{ alignSelf: "flex-start", background: "#0f0f0f", color: "#fafaf9", border: "none", font: "700 12.5px Helvetica,Arial,sans-serif", padding: "14px 26px", cursor: "pointer", borderRadius: 999 }}>SAVE CHANGES</button>
+            <div style={{ display: "flex", gap: 12 }}>
+              <button onClick={ctx.notifySaved} style={{ alignSelf: "flex-start", background: "#0f0f0f", color: "#fafaf9", border: "none", font: "700 12.5px Helvetica,Arial,sans-serif", padding: "14px 26px", cursor: "pointer", borderRadius: 999 }}>SAVE CHANGES</button>
+              <button onClick={ctx.logout} style={{ alignSelf: "flex-start", background: "none", color: "#0f0f0f", border: "1px solid #cfccc6", font: "700 12.5px Helvetica,Arial,sans-serif", padding: "14px 26px", cursor: "pointer", borderRadius: 999 }}>LOG OUT</button>
+            </div>
           </div>
         )}
       </div>

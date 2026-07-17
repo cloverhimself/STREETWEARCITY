@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { ApiError, apiFetch } from "@/lib/api";
 import StorefrontChrome from "./StorefrontChrome";
 import { pageIntro, pageTitle, pageWrap } from "./static-page-styles";
 import { useStorefront } from "./useStorefront";
@@ -30,9 +31,13 @@ export default function ResetPasswordPage() {
       return;
     }
     setFormError(null);
-    // Integration point: call the real reset endpoint here, e.g. POST /auth/reset-password { token, password }.
     setState("resetting");
-    setTimeout(() => setState("success"), 900);
+    apiFetch("/auth/reset-password", { method: "POST", body: JSON.stringify({ token, password }) })
+      .then(() => setState("success"))
+      .catch((err) => {
+        setFormError(err instanceof ApiError ? err.message : "Something went wrong");
+        setState(token ? "idle" : "error");
+      });
   }
 
   return (

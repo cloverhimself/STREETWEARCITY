@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { ApiError, apiFetch } from "@/lib/api";
 import StorefrontChrome from "./StorefrontChrome";
 import { pageIntro, pageTitle, pageWrap } from "./static-page-styles";
 import { useStorefront } from "./useStorefront";
@@ -13,11 +14,16 @@ export default function VerifyEmailPage() {
   const ctx = useStorefront();
   const token = useSearchParams().get("token");
   const [state, setState] = useState<VerifyState>(token ? "idle" : "error");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   function verify() {
-    // Integration point: call the real verification endpoint here, e.g. POST /auth/verify-email { token }.
     setState("verifying");
-    setTimeout(() => setState("success"), 900);
+    apiFetch("/auth/verify-email", { method: "POST", body: JSON.stringify({ token }) })
+      .then(() => setState("success"))
+      .catch((err) => {
+        setErrorMessage(err instanceof ApiError ? err.message : "Something went wrong");
+        setState("error");
+      });
   }
 
   return (
@@ -51,7 +57,7 @@ export default function VerifyEmailPage() {
         {state === "error" && (
           <>
             <h1 style={pageTitle}>LINK INVALID OR EXPIRED</h1>
-            <p style={pageIntro}>This verification link is missing or no longer valid. Request a new one from the login screen.</p>
+            <p style={pageIntro}>{errorMessage || "This verification link is missing or no longer valid. Request a new one from the login screen."}</p>
             <Link href="/" style={{ background: "none", color: "#0f0f0f", border: "1px solid #0f0f0f", font: "700 13px Helvetica,Arial,sans-serif", letterSpacing: ".05em", padding: "15px 32px", cursor: "pointer", borderRadius: 999 }}>BACK TO STREETWEAR CITY</Link>
           </>
         )}
